@@ -21,3 +21,10 @@ try:
     print(get_display(arabic_reshaper.reshape("\n معکوس ماتریس A:\n", A_inv)))
 except:
     print(get_display(arabic_reshaper.reshape("\n ماتریس A معکوس‌پذیر نیست!")))
+
+
+# دستورات Git
+#--------------------------------------------------------
+# git add Week1/Matrix_Operations.py
+# git commit -m "اضافه کردن تمرین ضرب ماتریس‌ها"
+# git push    
