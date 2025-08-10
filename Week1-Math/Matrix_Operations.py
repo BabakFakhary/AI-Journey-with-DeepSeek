@@ -20,7 +20,7 @@ try:
     A_inv = np.linalg.inv(A)
     print(get_display(arabic_reshaper.reshape("\n معکوس ماتریس A:\n", A_inv)))
 except:
-    print(get_display(arabic_reshaper.reshape("\n ماتریس A معکوس‌پذیر نیست!")))
+    print(get_display(arabic_reshaper.reshape("\n ماتریس A معکوس‌ پذیر نیست!")))
 
 
 # دستورات Git
