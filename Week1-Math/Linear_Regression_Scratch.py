@@ -19,6 +19,8 @@ X_b = np.c_[np.ones((len(X), 1)), X]  # تبدیل X به شکل [1, X]
 theta = np.linalg.inv(X_b.T.dot(X_b)).dot(X_b.T).dot(y)
 
 # پیش‌بینی مدل
+# تابع پیش بینی 
+# y=Xb⋅θ
 predictions = X_b.dot(theta)
 
 # نمایش نتایج
