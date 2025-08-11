@@ -30,6 +30,8 @@ X_b = np.c_[np.ones(len(X_scaled)), X_scaled]
 model = LinearRegression()
 model.fit(X_scaled, y)
 
+print(get_display(arabic_reshaper.reshape("ضرایب Scikit-Learn:")), model.intercept_, model.coef_)
+
 # پیش‌بینی
 predictions = model.predict(X_scaled)
 
