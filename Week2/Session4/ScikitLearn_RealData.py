@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_california_housing
 from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
 
 # بارگذاری داده‌ها
 data = fetch_california_housing()
@@ -25,14 +26,16 @@ X_scaled = scaler.fit_transform(X)
 X_b = np.c_[np.ones(len(X_scaled)), X_scaled]
 
 # محاسبه پارامترها با معادلهٔ نرمال
-theta = np.linalg.inv(X_b.T.dot(X_b)).dot(X_b.T).dot(y)
+# Scikit-Learn
+model = LinearRegression()
+model.fit(X_scaled, y)
 
 # پیش‌بینی
-predictions = X_b.dot(theta)
+predictions = model.predict(X_scaled)
 
 # نمایش نتایج
 plt.scatter(X, y, alpha=0.5, label=get_display(arabic_reshaper.reshape('داده‌های واقعی')))
-plt.plot(X, predictions, color='red', label=get_display(arabic_reshaper.reshape('مدل رگرسیون با مدل معادله نرمال')))
+plt.plot(X, predictions, color='red', label=get_display(arabic_reshaper.reshape('مدل رگرسیون با روش Scikit-Learn')))
 plt.xlabel(get_display(arabic_reshaper.reshape('تعداد اتاق‌ها')))
 plt.ylabel(get_display(arabic_reshaper.reshape('قیمت خانه (x1000$)')))
 plt.legend()
