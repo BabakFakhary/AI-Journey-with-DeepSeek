@@ -27,6 +27,7 @@ X_b = np.c_[np.ones(len(X_scaled)), X_scaled]
 
 # محاسبه پارامترها با معادلهٔ نرمال
 # Scikit-Learn
+# معادله نرمال پیاده سازی شده 
 model = LinearRegression()
 model.fit(X_scaled, y)
 

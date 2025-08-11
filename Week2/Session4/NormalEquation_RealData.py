@@ -30,6 +30,9 @@ theta = np.linalg.inv(X_b.T.dot(X_b)).dot(X_b.T).dot(y)
 # پیش‌بینی
 predictions = X_b.dot(theta)
 
+# theta.ravel()  آرایه‌های چندبعدی را تبدیل به آرایه یک‌بعدی (مسطح‌شده) می‌کند
+print(get_display(arabic_reshaper.reshape("ضرایب نهایی (θ0, θ1):")), theta.ravel())
+
 # نمایش نتایج
 plt.scatter(X, y, alpha=0.5, label=get_display(arabic_reshaper.reshape('داده‌های واقعی')))
 plt.plot(X, predictions, color='red', label=get_display(arabic_reshaper.reshape('مدل رگرسیون با مدل معادله نرمال')))
