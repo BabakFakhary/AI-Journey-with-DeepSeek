@@ -6,6 +6,7 @@ import arabic_reshaper
 from bidi.algorithm import get_display
 #-------------------------------------------------------
 import numpy as np
+# pip install numpy scikit-learn matplotlib pandas
 import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_california_housing
 from sklearn.preprocessing import StandardScaler
