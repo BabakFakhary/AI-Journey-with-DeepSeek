@@ -43,25 +43,27 @@ model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy']
 # verbose کنترل می‌کند که اطلاعات آموزش چگونه نمایش داده شوند 
 model.fit(X_train, y_train, epochs=100, verbose=0)
 
-# ارزیابی مدل
-loss, accuracy = model.evaluate(X_test, y_test)
-print(get_display(arabic_reshaper.reshape(f"دقت مدل روی داده تست: {accuracy * 100:.2f}%")))
-print(get_display(arabic_reshaper.reshape(f"خطای کلی: {loss:.4f}\n")))
-
 # داده‌های جدید برای پیش‌بینی (سن و درآمد)
-new_data = np.array([
+new_data_x = np.array([
     [28, 35],  # جوان با درآمد متوسط
     [50, 25]   # مسن با درآمد پایین
 ])
 
-# پیش‌بینی احتمال خرید
-predictions = model.predict(new_data)
+new_data_y = np.array([0, 1])
 
+# پیش‌بینی احتمال خرید
+predictions = model.predict(new_data_x)
 # تبدیل احتمال به کلاس (با آستانه 0.5)
 predicted_classes = (predictions > 0.5).astype(int)
 
 
-for i in range(len(new_data)):
-    print(get_display(arabic_reshaper.reshape(f"\nفرد با سن {new_data[i][0]} سال و درآمد {new_data[i][1]} میلیون:")))
+for i in range(len(new_data_x)):
+    print(get_display(arabic_reshaper.reshape(f"\nفرد با سن {new_data_x[i][0]} سال و درآمد {new_data_x[i][1]} میلیون:")))
+    print(get_display(arabic_reshaper.reshape(f"  برچسب واقعی: {new_data_y[i]}")))
     print(get_display(arabic_reshaper.reshape(f"  احتمال خرید: {predictions[i][0]:.2f}")))
     print(get_display(arabic_reshaper.reshape(f"  پیش‌بینی نهایی: {'خریدار' if predicted_classes[i][0] == 1 else 'غیرخریدار'}")))
+
+# ارزیابی مدل
+loss, accuracy = model.evaluate(new_data_x, new_data_y)
+print(get_display(arabic_reshaper.reshape(f"دقت مدل روی داده تست: {accuracy * 100:.2f}%")))
+print(get_display(arabic_reshaper.reshape(f"خطای کلی: {loss:.4f}\n")))
