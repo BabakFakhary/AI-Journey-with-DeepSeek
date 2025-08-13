@@ -31,6 +31,11 @@ model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy']
 # verbose کنترل می‌کند که اطلاعات آموزش چگونه نمایش داده شوند 
 model.fit(X_train, y_train, epochs=100, verbose=0)
 
+# ارزیابی مدل
+loss, accuracy = model.evaluate(X_test, y_test)
+print(get_display(arabic_reshaper.reshape(f"دقت مدل روی داده تست: {accuracy * 100:.2f}%")))
+print(get_display(arabic_reshaper.reshape(f"خطای کلی: {loss:.4f}\n")))
+
 # پیش‌بینی برای داده‌های تست
 y_pred = model.predict(X_test)
 #  برای اینکه خروجی واقعی یک یا صفر هست عدی که پیش بینی می کند عددی بین صفر و یک هست باید برای این کار به صفر یا یک تبدیل کنیم  
@@ -60,8 +65,3 @@ print(get_display(arabic_reshaper.reshape(f"\nتعداد نمونه‌های ا�
 print(get_display(arabic_reshaper.reshape("نمونه‌های اشتباه:")))
 for idx in wrong_predictions:
     print(get_display(arabic_reshaper.reshape(f"  نمونه {idx+1}: واقعی={y_test[idx]}, پیش‌بینی={y_pred_classes[idx]}")))
-
-# ارزیابی مدل
-loss, accuracy = model.evaluate(X_test, y_test)
-print(get_display(arabic_reshaper.reshape(f"دقت مدل روی داده تست: {accuracy * 100:.2f}%")))
-print(get_display(arabic_reshaper.reshape(f"خطای کلی: {loss:.4f}\n")))
