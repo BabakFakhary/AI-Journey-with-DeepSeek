@@ -23,9 +23,9 @@ y_test = tf.keras.utils.to_categorical(y_test, 10)
 # 2. ساخت مدل CNN
 model =  tf.keras.models.Sequential([
     tf.keras.layers.Conv2D(
-    filters=32,         # تعداد فیلترها (تعداد ویژگی‌های استخراج شده)
+    filters=32,         # تعداد فیلترها (تعداد ویژگی‌های استخراج شده مانند بافت لبه و ...)
     kernel_size=(3, 3),  # ابعاد پنجره کانولوشن (height, width)
-    activation='relu',   # تابع فعال‌سازی (غیرخطی‌سازی)
+    activation='relu',   # تابع فعال‌سازی (غیرخطی‌سازی) relu (Rectified Linear Unit) یک تابع فعال‌سازی غیرخطی است که به مدل کمک می‌کند روابط پیچیده را یاد بگیرد.
     input_shape=(28, 28, 1)  # ابعاد ورودی (height, width, channels)
     ),
     tf.keras.layers.MaxPooling2D((2, 2)),

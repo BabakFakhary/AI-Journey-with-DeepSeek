@@ -31,7 +31,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random
 
 # تعریف مدل
 model = tf.keras.models.Sequential([
-    tf.keras.layers.Dense(4, activation='relu', input_shape=(2,)),  # لایه پنهان با 4 نورون
+    tf.keras.layers.Dense(4, activation='relu', input_shape=(2,)),  # لایه پنهان با 4 نورون  input_shape=(2,) : نشان می‌دهد هر نمونه ورودی ۲ عدد (۲ ویژگی) دارد
     tf.keras.layers.Dense(1, activation='sigmoid')                 # لایه خروجی
 ])
 
