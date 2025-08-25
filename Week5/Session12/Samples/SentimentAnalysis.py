@@ -94,12 +94,14 @@ vocab['<PAD>'] = 0  # برای padding
 vocab['<UNK>'] = 1  # برای کلمات ناشناخته
 
 vocab_size = len(vocab)
-print(f"اندازه دیکشنری: {vocab_size}")
-print("نمونه‌ای از لغات:", list(vocab.keys())[:10])
+print(get_display(arabic_reshaper.reshape(f"اندازه دیکشنری: {vocab_size}")))
+print(get_display(arabic_reshaper.reshape("نمونه‌ای از لغات:")))
+print(' '.join([get_display(arabic_reshaper.reshape(word)) for word in list(vocab.keys())[:10]]))
 
 # ----------------------------
 # ۳. تبدیل متن به اعداد
 # ----------------------------
+# این تابع لغات رو به عدد تبدیل می کند و در ادامه در صورتی که طول کمتر از ماکس لنث باشد کاراکتر جای خالی وگرنه خود متن تا 10 کلمه رو برمی گرداند
 def text_to_sequence(text, vocab, max_length=10):
     words = text.split()
     sequence = [vocab.get(word, vocab['<UNK>']) for word in words]
@@ -187,6 +189,11 @@ class MultiHeadAttention(nn.Module):
 # ----------------------------
 # ۶. آماده‌سازی داده برای آموزش
 # ----------------------------
+# تانسور یک ساختار داده‌ای است 
+  # مانند لیست یا آرایه عمل می‌کند
+  # می‌تواند ابعاد مختلف داشته باشد
+  # روی GPU قابل پردازش است
+  # برای محاسبات عددی بهینه شده
 X = torch.tensor(sequences, dtype=torch.long)
 y = torch.tensor(labels, dtype=torch.long)
 
@@ -202,9 +209,9 @@ print(get_display(arabic_reshaper.reshape(f"داده تست: {len(X_test)} نم�
 # ۷. ایجاد و آموزش مدل
 # ----------------------------
 # پارامترها
-embedding_dim = 64
-num_heads = 4   # Multi Head
-num_classes = 3 # 0: منفی, 1: مثبت, 2: خنثی
+embedding_dim = 64 # یعنی هر کلمه با یک بردار 64 بعدی نمایش داده می‌شود  "گربه" -> [0.1, 0.5, -0.2, 0.8, ..., 0.3]  # 64 عدد
+num_heads = 4      # Multi Head
+num_classes = 3    # 0: منفی, 1: مثبت, 2: خنثی
 
 model = SentimentAnalysisModel(vocab_size, embedding_dim, num_heads, num_classes)
 criterion = nn.CrossEntropyLoss()
@@ -270,14 +277,15 @@ def predict_sentiment(text, model, vocab):
     sequence = text_to_sequence(processed_text, vocab, max_length)
     
     # پیش‌بینی
+    # گرادیان مثل یک قطب نما است که به مدل نشان می‌دهد باید به کدام سمت حرکت کند تا خطا کم شود
     model.eval()
-    with torch.no_grad():                                             # کاربرد: غیرفعال کردن محاسبه گرادیان‌ها
+    with torch.no_grad():                                                # کاربرد: غیرفعال کردن محاسبه گرادیان‌ها
         input_tensor = torch.tensor([sequence], dtype=torch.long)        # چرا؟: در زمان تست نیازی به محاسبه gradient نداریم
         logits, attn_weights = model(input_tensor)                       # صرفه‌جویی در حافظه و محاسبات
         prediction = torch.argmax(logits, dim=1).item()
     
     # نمایش نتیجه
-    sentiment_map = {0: get_display(arabic_reshaper.reshape('منفی')), 1: get_display(arabic_reshaper.reshape('مثبت')), 2: get_display(arabic_reshaper.reshape('خنثی'))}
+    sentiment_map = {0: 'منفی', 1: 'مثبت', 2:'خنثی'}
     return sentiment_map[prediction], attn_weights
 
 # تست روی جملات جدید
@@ -294,7 +302,7 @@ for text in test_texts:
     sentiment, _ = predict_sentiment(text, model, vocab)
     print(get_display(arabic_reshaper.reshape(f"'{text}' → احساس: {sentiment}")))
 
-    # ----------------------------
+# ----------------------------
 # ۱۰. نمایش وزن‌های attention
 # ----------------------------
 # گرفتن وزن‌های attention برای یک نمونه
@@ -318,7 +326,7 @@ words = []
 for word_id in sample_input[0]:
     if word_id.item() != 0:  # ignore padding
         word = [k for k, v in vocab.items() if v == word_id.item()][0]
-        words.append(word)
+        words.append(get_display(arabic_reshaper.reshape(word)))
 
 plt.xticks(range(len(words)), words, rotation=45)
 plt.yticks(range(len(words)), words)
@@ -326,10 +334,34 @@ plt.yticks(range(len(words)), words)
 plt.tight_layout()
 plt.show()
 
+# ----------------------------
+# ۱۱. گزارش طبقه‌بندی:
+# ----------------------------
+# تفسیر خروجی ها
+  # Precision (دقت) : معنی: از بین پیش‌بینی‌های مثبت، چندتا واقعاً مثبت بودند
+    # مثال: اگر مدل ۱۰ بار "مثبت" پیش‌بینی کند و ۸ تای آن درست باشد، precision = 0.8
+  #  Recall (فراخوانی): معنی: از بین موارد واقعاً مثبت، چندتا را correctly شناسایی کرد؟
+    # مثال: اگر ۱۰ نظر مثبت وجود داشته باشد و مدل ۹ تای آن را شناسایی کند، recall = 0.9
+  # F1-Score: معنی: میانگین гарمونیک precision و recall
+  # Support: معنی: تعداد نمونه‌های واقعی هر کلاس
+  # Accuracy (دقت کلی) : معنی: درصد پیش‌بینی‌های درست از کل
+  # Macro Avg: معنی: میانگین ساده معیارها برای همه کلاس‌ها
+  # Weighted Avg: معنی: میانگین وزنی بر اساس support هر کلاس
+    # برای کلاس‌های با نمونه بیشتر، وزن بیشتری دارد
 print(get_display(arabic_reshaper.reshape("\nگزارش طبقه‌بندی:")))
 model.eval()
 with torch.no_grad():
     test_logits, _ = model(X_test)
     test_preds = torch.argmax(test_logits, dim=1)
-    print(classification_report(y_test.numpy(), test_preds.numpy(), 
-                              target_names=[get_display(arabic_reshaper.reshape('منفی')), get_display(arabic_reshaper.reshape('مثبت')), get_display(arabic_reshaper.reshape('خنثی'))]))
+    
+    # بررسی کلاس‌های موجود
+    unique_classes = np.unique(y_test.numpy())
+    print(get_display(arabic_reshaper.reshape(f"کلاس‌های موجود: {unique_classes}")))
+    
+    # گزارش طبقه‌بندی
+    print(classification_report(y_test.numpy(), test_preds.numpy(),
+                              labels=[0, 1, 2],
+                              target_names=[get_display(arabic_reshaper.reshape('منفی')), 
+                                           get_display(arabic_reshaper.reshape('مثبت')), 
+                                           get_display(arabic_reshaper.reshape('خنثی'))],
+                              zero_division=0))  # برای جلوگیری از خطا در صورت عدم وجود کلاس
