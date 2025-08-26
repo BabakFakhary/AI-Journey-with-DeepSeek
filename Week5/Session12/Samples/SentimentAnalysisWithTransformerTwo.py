@@ -1,4 +1,4 @@
-#                                                                  به نام خدا
+#                                                                   به نام خدا
 # install: pip install --upgrade arabic-reshaper
 import arabic_reshaper
 #-------------------------------------------------------
@@ -15,40 +15,61 @@ import json
 import matplotlib.pyplot as plt
 
 # ---------------------------------------------------------------------------------------------------
-# تحلیل احساسات
-# اگر هدف شما ساختن یک مدل قوی، Accurate و قابل استقرار با کمترین کد است، فایل دوم (TensorFlow) برنده بی‌چون و چراست.
-# نوع مدل  یک بلوک Transformer کامل (Attention + FFN)
-# Embedding + Pos Encoding -> Transformer Block -> Classifier
-# Transformer کامل
-  # Self-Attention (با مکانیزم Multi-Head)
-  # Feed-Forward Network (یک شبکه عصبی کوچک)
-  # Connectionهای Residual (برای جلوگیری از Vanishing Gradient)
-  # Layer Normalization (برای پایداری آموزش)
+# تحلیل احساسات با قابلیت تشخیص جملات خنثی
 # ---------------------------------------------------------------------------------------------------
 
 def fa(text):
     return get_display(arabic_reshaper.reshape(text)) 
 
 # --------------------------------------------------------------------
-# 1. تولید داده‌های واقعی فارسی (نظرات محصولات)
+# 1. تولید داده‌های واقعی فارسی (نظرات محصولات) با کلاس خنثی
 # --------------------------------------------------------------------
 # داده‌های نمونه از نظرات واقعی فارسی
 reviews_data = [
-    {"text": "این محصول واقعا عالی است و کیفیت فوق العاده ای دارد", "label": 1},
-    {"text": "خیلی بد و بی کیفیت بود، پشیمان شدم", "label": 0},
-    {"text": "قیمت مناسبی دارد و ارزش خرید دارد", "label": 1},
-    {"text": "اصلا توصیه نمی کنم، waste of money", "label": 0},
-    {"text": "سریع رسید و بسته بندی عالی بود", "label": 1},
-    {"text": "محصول معیوب رسید، بسیار ناراحتم", "label": 0},
-    {"text": "کیفیت ساخت عالی، کاملا راضی هستم", "label": 1},
-    {"text": "بدترین خرید عمرم بود", "label": 0},
-    {"text": "کارایی فوق العاده، پیشنهاد می کنم", "label": 1},
-    {"text": "پس از دو روز خراب شد", "label": 0},
-    {"text": "طراحی زیبا و عملکرد عالی", "label": 1},
-    {"text": "اصلا به درد نمی خوره", "label": 0},
-    {"text": "نسبت به قیمتش عالیه", "label": 1},
-    {"text": "حیف پولم که خرج این چیز بدم کردم", "label": 0},
-    {"text": "همه ویژگی های承诺 شده رو داره", "label": 1},
+    # داده‌های مثبت (افزوده شده)
+    {"text": "عالی بود واقعا راضی هستم", "label": 1},
+    {"text": "کیفیت خیلی خوبی دارد", "label": 1},
+    {"text": "خرید خوبی بود توصیه می کنم", "label": 1},
+    {"text": "عملکرد فوق العاده ای دارد", "label": 1},
+    {"text": "ارزش خرید دارد", "label": 1},    
+    {"text": "عالی بود", "label": 1},   
+    {"text": "خوب بود", "label": 1},   
+    {"text": "عالی", "label": 1}, 
+    {"text": "خوب", "label": 1}, 
+    {"text": "این محصول واقعا عالی است و کیفیت فوق العاده ای دارد", "label": 1},  # مثبت
+    {"text": "قیمت مناسبی دارد و ارزش خرید دارد", "label": 1},  # مثبت
+    {"text": "سریع رسید و بسته بندی عالی بود", "label": 1},  # مثبت
+    {"text": "کیفیت ساخت عالی، کاملا راضی هستم", "label": 1},  # مثبت
+    {"text": "کارایی فوق العاده، پیشنهاد می کنم", "label": 1},  # مثبت
+    {"text": "طراحی زیبا و عملکرد عالی", "label": 1},  # مثبت
+    {"text": "نسبت به قیمتش عالیه", "label": 1},  # مثبت
+    {"text": "همه ویژگی گفته شده رو داره", "label": 1},  # مثبت
+    # داده‌های منفی (افزوده شده)
+    {"text": "خیلی بد بود ناراضی هستم", "label": 0},
+    {"text": "کیفیت بسیار پایینی دارد", "label": 0},
+    {"text": "پشیمان شدم از خرید", "label": 0},
+    {"text": "عملکرد ضعیفی دارد", "label": 0},
+    {"text": "ارزش خرید ندارد", "label": 0},   
+    {"text": "خیلی بد و بی کیفیت بود، پشیمان شدم", "label": 0},  # منفی    
+    {"text": "اصلا توصیه نمی کنم، waste of money", "label": 0},  # منفی    
+    {"text": "محصول معیوب رسید، بسیار ناراحتم", "label": 0},  # منفی    
+    {"text": "بدترین خرید عمرم بود", "label": 0},  # منفی    
+    {"text": "پس از دو روز خراب شد", "label": 0},  # منفی    
+    {"text": "اصلا به درد نمی خوره", "label": 0},  # منفی    
+    {"text": "حیف پولم که خرج این چیز بدم کردم", "label": 0},  # منفی   
+    {"text": "بد هست", "label": 0},  # منفی    
+    {"text": "بد خیلی", "label": 0},  # منفی  
+    # اضافه کردن داده‌های خنثی
+    {"text": "این محصول معمولی است", "label": 2},  # خنثی
+    {"text": "نه خوبه نه بد", "label": 2},  # خنثی
+    {"text": "نه خوب نه بد", "label": 2},  # خنثی
+    {"text": "محصول قابل قبولی است", "label": 2},  # خنثی
+    {"text": "چیزی برای گفتن ندارم", "label": 2},  # خنثی
+    {"text": "معمولی مثل بقیه محصولات", "label": 2},  # خنثی
+    {"text": "نه عالی نه بد", "label": 2},  # خنثی
+    {"text": "مناسب قیمتش بود", "label": 2},  # خنثی
+    {"text": "قابل قبول", "label": 2},  # خنثی
+    {"text": "معمولی هست", "label": 2},  # خنثی
 ]
 
 # ایجاد دیتافرام
@@ -137,7 +158,6 @@ print(fa(f"\nشکل داده‌ها: X={X.shape}, y={y.shape}"))
 # --------------------------------------------------------------------
 # 4. تعریف MultiHeadAttention ساده‌شده
 # --------------------------------------------------------------------
-  #  Self-Attention (توجه به خود) : کاری که می‌کند: به هر کلمه می‌گوید: "به همه کلمات دیگر نگاه کن و ببین چقدر به هرکدام باید توجه کنی
 class SimpleMultiHeadAttention(tf.keras.layers.Layer):
     def __init__(self, d_model, num_heads):
         super(SimpleMultiHeadAttention, self).__init__()
@@ -180,25 +200,15 @@ class SimpleMultiHeadAttention(tf.keras.layers.Layer):
 # 5. تعریف Transformer Block کامل
 # --------------------------------------------------------------------  
 class TransformerBlock(tf.keras.layers.Layer):
-    # Transformer Block: 
-      # روابط بین همه کلمات را پیدا می‌کند
-      # اطلاعات را ترکیب می‌کند 
-      # پردازش عمیق انجام می‌دهد
-      # اطلاعات را غنی‌تر می‌کند 
-      # حفظ اطلاعات اصلی + اضافه کردن اطلاعات جدید
     def __init__(self, d_model, num_heads, dff, rate=0.1):
         super(TransformerBlock, self).__init__()
         
-        #  Self-Attention (توجه به خود) : کاری که می‌کند: به هر کلمه می‌گوید: "به همه کلمات دیگر نگاه کن و ببین چقدر به هرکدام باید توجه کنی
         self.mha = SimpleMultiHeadAttention(d_model, num_heads)
-
-        # Feed Forward Network (شبکه پیش‌خور) : کاری که می‌کند: "یک پردازش اضافی و غیرخطی روی اطلاعات انجام بده"
         self.ffn = tf.keras.Sequential([
             tf.keras.layers.Dense(dff, activation='relu'),
             tf.keras.layers.Dense(d_model)
         ])
         
-        # Residual Connection و Layer Norm  : کاری که می‌کند: "باز هم اطلاعات را ترکیب و استاندارد کن"
         self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         
@@ -207,60 +217,78 @@ class TransformerBlock(tf.keras.layers.Layer):
     
     def call(self, x, training):
         # Self-Attention
-        attn_output = self.mha(x, x, x)  # Q, K, V همه x هستند (Self-Attention)
+        attn_output = self.mha(x, x, x)
         attn_output = self.dropout1(attn_output, training=training)
-        out1 = self.layernorm1(x + attn_output)  # Residual connection
+        out1 = self.layernorm1(x + attn_output)
         
         # Feed Forward Network
         ffn_output = self.ffn(out1)
         ffn_output = self.dropout2(ffn_output, training=training)
-        out2 = self.layernorm2(out1 + ffn_output)  # Residual connection
+        out2 = self.layernorm2(out1 + ffn_output)
         
         return out2
 
 # --------------------------------------------------------------------
-# 6. ساخت مدل کامل برای تحلیل احساسات
+# 6. ساخت مدل کامل برای تحلیل احساسات (سه کلاسه)
 # --------------------------------------------------------------------
-def build_sentiment_model(vocab_size, max_length, d_model=64, num_heads=4, dff=128):
-    """ساخت مدل تحلیل احساسات با Transformer"""
+# def build_sentiment_model(vocab_size, max_length, d_model=64, num_heads=4, dff=128, num_classes=3):
+#     """ساخت مدل تحلیل احساسات با Transformer"""
+    
+#     inputs = tf.keras.Input(shape=(max_length,))
+    
+#     # Embedding Layer
+#     embedding = tf.keras.layers.Embedding(vocab_size, d_model)(inputs)
+    
+#     # Positional Encoding ساده‌شده
+#     positions = tf.range(start=0, limit=max_length, delta=1)
+#     positions = tf.expand_dims(positions, 0)
+#     positional_encoding = tf.keras.layers.Embedding(max_length, d_model)(positions)
+    
+#     x = embedding + positional_encoding
+    
+#     # Transformer Block
+#     transformer_block = TransformerBlock(d_model, num_heads, dff)
+#     x = transformer_block(x, training=True)
+    
+#     # Global Average Pooling
+#     x = tf.keras.layers.GlobalAveragePooling1D()(x)
+    
+#     # Classification Head (اکنون سه کلاسه)
+#     x = tf.keras.layers.Dropout(0.2)(x)
+#     outputs = tf.keras.layers.Dense(num_classes, activation='softmax')(x)  # تغییر به softmax نسبت به کد SentimentAnalysisWithTransformer.py
+    
+#     model = tf.keras.Model(inputs=inputs, outputs=outputs)
+#     return model
+def build_sentiment_model(vocab_size, max_length, d_model=32, num_heads=2, dff=64, num_classes=3):
+    """ساخت مدل ساده‌تر"""
     
     inputs = tf.keras.Input(shape=(max_length,))
     
-    # Embedding Layer
+    # Embedding
     embedding = tf.keras.layers.Embedding(vocab_size, d_model)(inputs)
     
-    # Positional Encoding ساده‌شده
-    positions = tf.range(start=0, limit=max_length, delta=1)
-    positions = tf.expand_dims(positions, 0)
-    positional_encoding = tf.keras.layers.Embedding(max_length, d_model)(positions)
-    
-    x = embedding + positional_encoding
-    
-    # Transformer Block
-    transformer_block = TransformerBlock(d_model, num_heads, dff)
-    x = transformer_block(x, training=True)
-    
-    # Global Average Pooling
-    x = tf.keras.layers.GlobalAveragePooling1D()(x)
+    # جایگزینی Transformer با LSTM ساده‌تر
+    x = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(32))(embedding)
+    x = tf.keras.layers.Dropout(0.3)(x)
     
     # Classification Head
-    x = tf.keras.layers.Dropout(0.2)(x)
-    outputs = tf.keras.layers.Dense(1, activation='sigmoid')(x)
+    outputs = tf.keras.layers.Dense(num_classes, activation='softmax')(x)
     
     model = tf.keras.Model(inputs=inputs, outputs=outputs)
     return model
 
-# ساخت مدل
+# ساخت مدل با سه کلاس
 vocab_size = len(vocab)
-model = build_sentiment_model(vocab_size, max_length)
+num_classes = 3  # منفی، مثبت، خنثی
+model = build_sentiment_model(vocab_size, max_length, num_classes=num_classes)
 
 print(fa("\nخلاصه مدل:"))
 model.summary()
 
-# کامپایل مدل
+# کامپایل مدل (اکنون با loss مناسب برای چندکلاسه)
 model.compile(
     optimizer='adam',
-    loss='binary_crossentropy',
+    loss='sparse_categorical_crossentropy',  # تغییر به این تابع زیان
     metrics=['accuracy']
 )
 
@@ -270,13 +298,17 @@ model.compile(
 print(fa("\n🔨 آموزش مدل..."))
 
 # تقسیم داده به train و test
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
+
+# 3. اضافه کردن وزن کلاس برای مقابله با عدم تعادل
+class_weights = {0: 2.0, 1: 2.0, 2: 1.0}  # وزن بیشتر برای کلاس‌های اقلیت
 
 history = model.fit(
     X_train, y_train,
     epochs=50,
-    batch_size=8,
+    batch_size=4,  # بچ سایز کوچکتر
     validation_split=0.2,
+    class_weight=class_weights,  # اضافه کردن وزن کلاس
     verbose=1
 )
 
@@ -286,14 +318,16 @@ history = model.fit(
 print(fa("\n📊 ارزیابی مدل..."))
 
 # پیش‌بینی روی داده تست
-y_pred = model.predict(X_test)
-y_pred_binary = (y_pred > 0.5).astype(int)
+y_pred_probs = model.predict(X_test)
+y_pred = np.argmax(y_pred_probs, axis=1)  # گرفتن کلاس با بیشترین احتمال
 
-accuracy = accuracy_score(y_test, y_pred_binary)
+accuracy = accuracy_score(y_test, y_pred)
 print(fa(f"دقت مدل: {accuracy:.2f}"))
 
 print(fa("\nگزارش طبقه‌بندی:"))
-print(classification_report(y_test, y_pred_binary))
+# تعریف نام کلاس‌ها برای گزارش
+class_names = [fa('منفی'), fa('مثبت'), fa('خنثی')]
+print(classification_report(y_test, y_pred, target_names=class_names))
 
 # --------------------------------------------------------------------
 # 9. تست مدل روی جملات جدید
@@ -305,21 +339,41 @@ test_sentences = [
     "خیلی بد بود",         # منفی
     "کیفیت خوبی دارد",     # مثبت
     "پشیمان شدم",          # منفی
+    "محصول معمولی است",    # خنثی
+    "نه خوبه نه بد",       # خنثی
+    "قابل قبول بود",       # خنثی
 ]
 
-for sentence in test_sentences:
+# تابع پیش‌بینی جدید برای سه کلاس
+def predict_sentiment(text, model, vocab, max_length=15):
     # پیش‌پردازش
-    cleaned = preprocess_persian_text(sentence)
+    cleaned = preprocess_persian_text(text)
     sequence = text_to_sequence(cleaned, vocab, max_length)
     sequence = np.array([sequence])
     
     # پیش‌بینی
-    prediction = model.predict(sequence)[0][0]
-    sentiment = "مثبت 👍" if prediction > 0.5 else "منفی 👎"
+    prediction_probs = model.predict(sequence)[0]
+    predicted_class = np.argmax(prediction_probs)
+    confidence = prediction_probs[predicted_class]
+    
+    # نگاشت کلاس به نام احساس
+    sentiment_map = {
+        0: "منفی 👎",
+        1: "مثبت 👍", 
+        2: "خنثی 😐"
+    }
+    
+    return sentiment_map[predicted_class], confidence, prediction_probs
+
+for sentence in test_sentences:
+    # پیش‌بینی
+    sentiment, confidence, probs = predict_sentiment(sentence, model, vocab, max_length)
     
     print(fa(f"جمله: '{sentence}'"))
-    print(fa(f"احساس: {sentiment} (اعتماد: {prediction:.2f})"))
-    print("-" * 40)
+    print(fa(f"احساس: {sentiment} (اعتماد: {confidence:.2f})"))
+    # استفاده از f-string برای حل مشکل
+    print(fa(f"توزیع احتمالات: منفی={probs[0]:.2f}, مثبت={probs[1]:.2f}, خنثی={probs[2]:.2f}"))
+    print("-" * 50)
 
 # --------------------------------------------------------------------
 # 10. تجسم نتایج
@@ -345,4 +399,4 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
-print(fa("\n🎉 مدل Transformer برای تحلیل احساسات فارسی آماده است!"))
+print(fa("\n🎉 مدل Transformer برای تحلیل احساسات فارسی (سه کلاسه) آماده است!"))
