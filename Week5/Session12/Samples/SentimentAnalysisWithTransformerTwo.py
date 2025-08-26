@@ -231,51 +231,51 @@ class TransformerBlock(tf.keras.layers.Layer):
 # --------------------------------------------------------------------
 # 6. ساخت مدل کامل برای تحلیل احساسات (سه کلاسه)
 # --------------------------------------------------------------------
-# def build_sentiment_model(vocab_size, max_length, d_model=64, num_heads=4, dff=128, num_classes=3):
-#     """ساخت مدل تحلیل احساسات با Transformer"""
-    
-#     inputs = tf.keras.Input(shape=(max_length,))
-    
-#     # Embedding Layer
-#     embedding = tf.keras.layers.Embedding(vocab_size, d_model)(inputs)
-    
-#     # Positional Encoding ساده‌شده
-#     positions = tf.range(start=0, limit=max_length, delta=1)
-#     positions = tf.expand_dims(positions, 0)
-#     positional_encoding = tf.keras.layers.Embedding(max_length, d_model)(positions)
-    
-#     x = embedding + positional_encoding
-    
-#     # Transformer Block
-#     transformer_block = TransformerBlock(d_model, num_heads, dff)
-#     x = transformer_block(x, training=True)
-    
-#     # Global Average Pooling
-#     x = tf.keras.layers.GlobalAveragePooling1D()(x)
-    
-#     # Classification Head (اکنون سه کلاسه)
-#     x = tf.keras.layers.Dropout(0.2)(x)
-#     outputs = tf.keras.layers.Dense(num_classes, activation='softmax')(x)  # تغییر به softmax نسبت به کد SentimentAnalysisWithTransformer.py
-    
-#     model = tf.keras.Model(inputs=inputs, outputs=outputs)
-#     return model
-def build_sentiment_model(vocab_size, max_length, d_model=32, num_heads=2, dff=64, num_classes=3):
-    """ساخت مدل ساده‌تر"""
+def build_sentiment_model(vocab_size, max_length, d_model=64, num_heads=4, dff=128, num_classes=3):
+    """ساخت مدل تحلیل احساسات با Transformer"""
     
     inputs = tf.keras.Input(shape=(max_length,))
     
-    # Embedding
+    # Embedding Layer
     embedding = tf.keras.layers.Embedding(vocab_size, d_model)(inputs)
     
-    # جایگزینی Transformer با LSTM ساده‌تر
-    x = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(32))(embedding)
-    x = tf.keras.layers.Dropout(0.3)(x)
+    # Positional Encoding ساده‌شده
+    positions = tf.range(start=0, limit=max_length, delta=1)
+    positions = tf.expand_dims(positions, 0)
+    positional_encoding = tf.keras.layers.Embedding(max_length, d_model)(positions)
     
-    # Classification Head
-    outputs = tf.keras.layers.Dense(num_classes, activation='softmax')(x)
+    x = embedding + positional_encoding
+    
+    # Transformer Block
+    transformer_block = TransformerBlock(d_model, num_heads, dff)
+    x = transformer_block(x, training=True)
+    
+    # Global Average Pooling
+    x = tf.keras.layers.GlobalAveragePooling1D()(x)
+    
+    # Classification Head (اکنون سه کلاسه)
+    x = tf.keras.layers.Dropout(0.2)(x)
+    outputs = tf.keras.layers.Dense(num_classes, activation='softmax')(x)  # تغییر به softmax نسبت به کد SentimentAnalysisWithTransformer.py
     
     model = tf.keras.Model(inputs=inputs, outputs=outputs)
     return model
+# def build_sentiment_model(vocab_size, max_length, d_model=32, num_heads=2, dff=64, num_classes=3):
+#     """ساخت مدل ساده‌تر"""
+    
+#     inputs = tf.keras.Input(shape=(max_length,))
+    
+#     # Embedding
+#     embedding = tf.keras.layers.Embedding(vocab_size, d_model)(inputs)
+    
+#     # جایگزینی Transformer با LSTM ساده‌تر
+#     x = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(32))(embedding)
+#     x = tf.keras.layers.Dropout(0.3)(x)
+    
+#     # Classification Head
+#     outputs = tf.keras.layers.Dense(num_classes, activation='softmax')(x)
+    
+#     model = tf.keras.Model(inputs=inputs, outputs=outputs)
+#     return model
 
 # ساخت مدل با سه کلاس
 vocab_size = len(vocab)
