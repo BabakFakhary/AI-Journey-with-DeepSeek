@@ -71,9 +71,9 @@ for task, model_name in MODELS.items():
     print(f"{task.upper():15}: {model_name}")
 print(f"="*50)
 
-# -----------------------------------------------------
+# =====================================================
 # 1. Token Classification (NER)
-# -----------------------------------------------------
+# =====================================================
 
 # داده نمونه برای NER
 # این یک نمونه داده استاندارد برای آموزش یا ارزیابی یک مدل تشخیص موجودیت‌های نامدار (NER) است.
@@ -179,3 +179,110 @@ print(f"\nText: {text}")
 print("Named Entities:")
 for entity in entities:
     print(f"  {entity['word']:15} -> {entity['label']}")
+
+
+# =====================================================
+# 2.  Question Answering
+# =====================================================
+
+# آماده‌سازی داده برای QA
+# داده نمونه برای Question Answering
+qa_data = [
+    {
+        "context": "The Amazon rainforest is a moist broadleaf tropical rainforest in the Amazon biome that covers most of the Amazon basin of South America.",
+        "question": "Where is the Amazon rainforest located?",
+        "answers": {"text": ["Amazon basin of South America"], "answer_start": [87]}
+    },
+    {
+        "context": "The Eiffel Tower is a wrought-iron lattice tower on the Champ de Mars in Paris, France.",
+        "question": "In which city is the Eiffel Tower located?",
+        "answers": {"text": ["Paris"], "answer_start": [58]}
+    }
+]
+
+print(f"="*50)
+print("QA Dataset Sample:")
+for i, item in enumerate(qa_data):
+    print(f"{i+1}. Context: {item['context'][:50]}...")
+    print(f"   Question: {item['question']}")
+    print(f"   Answer: {item['answers']['text'][0]}")
+    print()    
+print(f"="*50)
+
+# ایجاد QA pipeline
+qa_pipeline = pipeline(
+    "question-answering",
+    model=MODELS['qa'],
+    device=0 if torch.cuda.is_available() else -1
+)
+
+# تست QA
+context = "The Great Wall of China is a series of fortifications made of stone, brick, tamped earth, wood, and other materials, generally built along an east-to-west line across the historical northern borders of China to protect the Chinese states and empires against the raids and invasions of the various nomadic groups of the Eurasian Steppe."
+question = "What materials were used to build the Great Wall?"
+
+result = qa_pipeline(question=question, context=context)
+print(f"Question: {question}")
+print(f"Answer: {result['answer']}")
+print(f"Confidence: {result['score']:.3f}")
+print(f"Start/End: {result['start']}-{result['end']}")
+
+# -----------------------------------------------------
+#  استفاده از QA Pipeline
+# -----------------------------------------------------
+# ایجاد QA pipeline
+qa_pipeline = pipeline(
+    "question-answering",
+    model=MODELS['qa'],
+    device=0 if torch.cuda.is_available() else -1
+)
+
+# تست QA
+context = "The Great Wall of China is a series of fortifications made of stone, brick, tamped earth, wood, and other materials, generally built along an east-to-west line across the historical northern borders of China to protect the Chinese states and empires against the raids and invasions of the various nomadic groups of the Eurasian Steppe."
+question = "What materials were used to build the Great Wall?"
+
+result = qa_pipeline(question=question, context=context)
+print(f"Question: {question}")
+print(f"Answer: {result['answer']}")
+print(f"Confidence: {result['score']:.3f}")
+print(f"Start/End: {result['start']}-{result['end']}")
+
+# -----------------------------------------------------
+# پیاده‌سازی دقیق‌تر QA
+# -----------------------------------------------------
+
+# بارگذاری مدل و توکنایزر برای QA
+qa_tokenizer = AutoTokenizer.from_pretrained(MODELS['qa'])
+qa_model = AutoModelForQuestionAnswering.from_pretrained(MODELS['qa'])
+qa_model.to(device)
+
+def advanced_qa(question, context):
+    inputs = qa_tokenizer(question, context, return_tensors="pt", truncation=True, padding=True)
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+    
+    with torch.no_grad():
+        outputs = qa_model(**inputs)
+    
+    answer_start = torch.argmax(outputs.start_logits)
+    answer_end = torch.argmax(outputs.end_logits) + 1
+    
+    answer_tokens = inputs["input_ids"][0][answer_start:answer_end]
+    answer = qa_tokenizer.decode(answer_tokens, skip_special_tokens=True)
+    
+    confidence = (torch.softmax(outputs.start_logits, dim=1)[0][answer_start] * 
+                 torch.softmax(outputs.end_logits, dim=1)[0][answer_end-1]).item()
+    
+    return {
+        "answer": answer,
+        "confidence": confidence,
+        "start": answer_start.item(),
+        "end": answer_end.item()
+    }
+
+# تست QA پیشرفته
+context = "The iPhone is a line of smartphones designed and marketed by Apple Inc."
+question = "Who markets the iPhone?"
+
+result = advanced_qa(question, context)
+print(f"Question: {question}")
+print(f"Answer: {result['answer']}")
+print(f"Confidence: {result['confidence']:.3f}")
