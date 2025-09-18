@@ -115,6 +115,7 @@ text = "Apple is opening a new store in San Francisco next month"
 entities = ner_pipeline(text)
 
 print(f"="*50)
+print("\nNER ---->")
 print(f"Text: {text}")
 print("Named Entities:")
 for entity in entities:
@@ -175,11 +176,12 @@ def advanced_ner(text):
 # تست NER پیشرفته
 text = "Microsoft was founded by Bill Gates in Albuquerque"
 entities = advanced_ner(text)
-print(f"\nText: {text}")
+print("\nAdvanced NER ---->")
+print(f"Text: {text}")
 print("Named Entities:")
 for entity in entities:
     print(f"  {entity['word']:15} -> {entity['label']}")
-
+print(f"="*50)
 
 # =====================================================
 # 2.  Question Answering
@@ -200,7 +202,6 @@ qa_data = [
     }
 ]
 
-print(f"="*50)
 print("QA Dataset Sample:")
 for i, item in enumerate(qa_data):
     print(f"{i+1}. Context: {item['context'][:50]}...")
@@ -208,23 +209,6 @@ for i, item in enumerate(qa_data):
     print(f"   Answer: {item['answers']['text'][0]}")
     print()    
 print(f"="*50)
-
-# ایجاد QA pipeline
-qa_pipeline = pipeline(
-    "question-answering",
-    model=MODELS['qa'],
-    device=0 if torch.cuda.is_available() else -1
-)
-
-# تست QA
-context = "The Great Wall of China is a series of fortifications made of stone, brick, tamped earth, wood, and other materials, generally built along an east-to-west line across the historical northern borders of China to protect the Chinese states and empires against the raids and invasions of the various nomadic groups of the Eurasian Steppe."
-question = "What materials were used to build the Great Wall?"
-
-result = qa_pipeline(question=question, context=context)
-print(f"Question: {question}")
-print(f"Answer: {result['answer']}")
-print(f"Confidence: {result['score']:.3f}")
-print(f"Start/End: {result['start']}-{result['end']}")
 
 # -----------------------------------------------------
 #  استفاده از QA Pipeline
@@ -241,10 +225,13 @@ context = "The Great Wall of China is a series of fortifications made of stone, 
 question = "What materials were used to build the Great Wall?"
 
 result = qa_pipeline(question=question, context=context)
+print(f"\nQA  ---->")
+print(f"Context: {context}")
 print(f"Question: {question}")
 print(f"Answer: {result['answer']}")
 print(f"Confidence: {result['score']:.3f}")
 print(f"Start/End: {result['start']}-{result['end']}")
+print(f"="*50)
 
 # -----------------------------------------------------
 # پیاده‌سازی دقیق‌تر QA
@@ -283,6 +270,80 @@ context = "The iPhone is a line of smartphones designed and marketed by Apple In
 question = "Who markets the iPhone?"
 
 result = advanced_qa(question, context)
+print(f"\nAdvanced QA ---->")
+print(f"Context: {context}")
 print(f"Question: {question}")
 print(f"Answer: {result['answer']}")
 print(f"Confidence: {result['confidence']:.3f}")
+print(f"="*50)
+
+# =====================================================
+# 3.  Text Generation
+# =====================================================
+
+# -----------------------------------------------------
+#  استفاده از Text Generation Pipeline
+# -----------------------------------------------------
+
+# ایجاد text generation pipeline
+text_generator = pipeline(
+    "text-generation",
+    model=MODELS['generation'],
+    device=0 if torch.cuda.is_available() else -1
+)
+
+# تولید متن
+prompt = "The future of artificial intelligence"
+generated_text = text_generator(
+    prompt,
+    max_length=100,
+    num_return_sequences=1,
+    temperature=0.7,
+    do_sample=True
+)
+
+print(f"\nText Generation ---->")
+print(f"Prompt: {prompt}")
+print(f"Generated text: {generated_text[0]['generated_text']}")
+print(f"="*50)
+
+# -----------------------------------------------------
+#  کنترل شده‌تر Text Generation
+# -----------------------------------------------------
+
+# بارگذاری مدل و توکنایزر برای text generation
+gen_tokenizer = AutoTokenizer.from_pretrained(MODELS['generation'])
+gen_model = AutoModelForCausalLM.from_pretrained(MODELS['generation'])
+gen_model.to(device)
+
+def controlled_generation(prompt, max_length=100, temperature=0.7, top_k=50, top_p=0.9):
+    inputs = gen_tokenizer.encode(prompt, return_tensors="pt").to(device)
+    
+    with torch.no_grad():
+        outputs = gen_model.generate(
+            inputs,
+            max_length=max_length,
+            temperature=temperature,
+            top_k=top_k,
+            top_p=top_p,
+            do_sample=True,
+            pad_token_id=gen_tokenizer.eos_token_id
+        )
+    
+    generated_text = gen_tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return generated_text
+
+# تست controlled generation
+prompt = "Renewable energy is important because"
+generated = controlled_generation(
+    prompt,
+    max_length=150,
+    temperature=0.8,
+    top_k=30,
+    top_p=0.95
+)
+
+print(f"\n Controlled Text Generation ---->")
+print(f"Prompt: {prompt}")
+print(f"Generated text: {generated}")
+print(f"="*50)
