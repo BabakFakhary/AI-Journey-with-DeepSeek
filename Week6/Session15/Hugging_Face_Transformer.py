@@ -5,7 +5,7 @@ import arabic_reshaper
 # install: pip install python-bidi
 from bidi.algorithm import get_display
 #-------------------------------------------------------
-# pip install transformers datasets accelerate
+# pip install transformers datasets accelerate flask
 import torch
 from transformers import (
     AutoTokenizer, 
@@ -22,6 +22,12 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import accuracy_score, classification_report
 import warnings
+from flask import Flask, request, jsonify
+import threading
+import requests
+import time 
+import json
+
 
 # ============================================================================================
 #                             Multiple Tasks با Hugging Face Transformers  - Tasks :
@@ -347,3 +353,256 @@ print(f"\n Controlled Text Generation ---->")
 print(f"Prompt: {prompt}")
 print(f"Generated text: {generated}")
 print(f"="*50)
+
+# =====================================================
+# 4.  مثال عملی: سیستم کامل NLP
+# =====================================================
+
+# -----------------------------------------------------
+#  ایجاد سیستم NLP چندمنظوره
+# -----------------------------------------------------
+
+class AdvancedNLPSystem:
+    def __init__(self):
+        # بارگذاری همه مدل‌ها
+        self.models = {}
+        self.tokenizers = {}
+        
+        # بارگذاری مدل‌های مختلف
+        self._load_models()
+    
+    def _load_models(self):
+        """بارگذاری همه مدل‌های لازم"""
+        print("Loading models...")
+        
+        # مدل برای classification
+        self.models['classification'] = AutoModelForSequenceClassification.from_pretrained(
+            'bert-base-uncased', num_labels=2
+        )
+        self.tokenizers['classification'] = AutoTokenizer.from_pretrained('bert-base-uncased')
+        
+        # مدل برای NER
+        self.models['ner'] = AutoModelForTokenClassification.from_pretrained(MODELS['ner'])
+        self.tokenizers['ner'] = AutoTokenizer.from_pretrained(MODELS['ner'])
+        
+        # مدل برای QA
+        self.models['qa'] = AutoModelForQuestionAnswering.from_pretrained(MODELS['qa'])
+        self.tokenizers['qa'] = AutoTokenizer.from_pretrained(MODELS['qa'])
+        
+        # انتقال به GPU
+        for model in self.models.values():
+            model.to(device)
+        
+        print("All models loaded successfully!")
+    
+    def analyze_text(self, text):
+        """آنالیز کامل متن"""
+        results = {}
+        
+        # Sentiment Analysis
+        results['sentiment'] = self._analyze_sentiment(text)
+        
+        # Named Entity Recognition
+        results['entities'] = self._extract_entities(text)
+        
+        # Text Summary (simulated)
+        results['summary'] = self._generate_summary(text)
+        
+        return results
+    
+    def _analyze_sentiment(self, text):
+        """تحلیل احساسات"""
+        inputs = self.tokenizers['classification'](text, return_tensors="pt", truncation=True, padding=True)
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+        
+        with torch.no_grad():
+            outputs = self.models['classification'](**inputs)
+        
+        probs = torch.softmax(outputs.logits, dim=1)
+        sentiment = "Positive" if torch.argmax(probs) == 1 else "Negative"
+        
+        return {
+            'sentiment': sentiment,
+            'confidence': probs[0][torch.argmax(probs)].item(),
+            'probabilities': probs.cpu().numpy()[0].tolist()
+        }
+    
+    def _extract_entities(self, text):
+        """استخراج موجودیت‌های نامدار"""
+        ner_pipeline = pipeline(
+            "token-classification",
+            model=self.models['ner'],
+            tokenizer=self.tokenizers['ner'],
+            aggregation_strategy="simple",
+            device=0 if torch.cuda.is_available() else -1
+        )
+        
+        return ner_pipeline(text)
+    
+    def _generate_summary(self, text):
+        """ایجاد خلاصه متن (ساده)"""
+        # در واقعیت از مدل summarization استفاده می‌شود
+        sentences = text.split('.')
+        if len(sentences) > 3:
+            return '.'.join(sentences[:2]) + '.'
+        return text
+
+# ایجاد و تست سیستم
+nlp_system = AdvancedNLPSystem()
+
+# متن نمونه برای آنالیز
+sample_text = """
+Apple Inc. is planning to open a new research facility in Tokyo, Japan next year. 
+The company announced this exciting news during their quarterly earnings call. 
+This move demonstrates Apple's commitment to expanding its global presence and 
+investing in artificial intelligence research. The new facility will create 
+approximately 500 jobs for local engineers and researchers.
+"""
+
+print("Analyzing text...")
+analysis = nlp_system.analyze_text(sample_text)
+
+print("\n=== TEXT ANALYSIS RESULTS ===")
+print(f"Sentiment: {analysis['sentiment']['sentiment']} (confidence: {analysis['sentiment']['confidence']:.3f})")
+
+print("\nNamed Entities:")
+for entity in analysis['entities']:
+    print(f"  {entity['word']:20} -> {entity['entity_group']} (score: {entity['score']:.3f})")
+
+print(f"\nSummary: {analysis['summary']}")
+
+test_text = """
+  Apple Inc. is an American multinational technology company that revolutionized the technology sector through its innovation of computer software, personal computers, mobile tablets, smartphones, and computer peripherals.
+  One of the most recognizable brands in the world, Apple created the first commercially successful personal computer and was also the first to bring the graphical user interface (GUI) into mass adoption.
+  Founded by Steve Jobs and Steve Wozniak in 1976, Apple set new benchmarks in product innovation, user-centric functionality, aesthetics and design, and multiproduct integration. Apple redefined and transformed the capabilities of modern computing. Further, Apple innovated the industry by establishing a marketplace ecosystem for third-party application developers, leveraging this new economy to expand its products’ functionalities and strengthen its position. The company is headquartered in Cupertino, California.
+"""
+
+print("Analyzing test text...")
+print(f"="*50)
+analysis = nlp_system.analyze_text(test_text)
+
+print("\n=== TEXT ANALYSIS RESULTS ===")
+print(f"Sentiment: {analysis['sentiment']['sentiment']} (confidence: {analysis['sentiment']['confidence']:.3f})")
+
+print("\nNamed Entities:")
+for entity in analysis['entities']:
+    print(f"  {entity['word']:20} -> {entity['entity_group']} (score: {entity['score']:.3f})")
+
+print(f"\nSummary: {analysis['summary']}")
+
+# -----------------------------------------------------
+#  Define API
+#   ایجاد ای پی ای ساده برای تست کد نوشته شده در 
+#     ایجاد سیستم NLP چندمنظوره   
+# -----------------------------------------------------
+
+class NLPAPI:
+    def __init__(self):
+        self.app = Flask(__name__)
+        self.nlp_system = AdvancedNLPSystem()
+        self._setup_routes()
+    
+    def _setup_routes(self):
+        @self.app.route('/analyze', methods=['POST'])
+        def analyze_text():
+            data = request.get_json()
+            text = data.get('text', '')
+            
+            if not text:
+                return jsonify({'error': 'No text provided'}), 400
+            
+            try:
+                results = self.nlp_system.analyze_text(text)
+                # تبدیل float32 به float
+                sanitized_results = self._sanitize_results(results)
+                return jsonify(sanitized_results)
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+        
+        @self.app.route('/health', methods=['GET'])
+        def health_check():
+            return jsonify({'status': 'healthy', 'device': str(device)})
+    
+    def _sanitize_results(self, results):
+        """تبدیل انواع غیرقابل سریال‌سازی به انواع استاندارد"""
+        
+        def convert(obj):
+            if isinstance(obj, dict):
+                return {k: convert(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert(item) for item in obj]
+            elif isinstance(obj, (np.float32, np.float64)):
+                return float(obj)
+            elif isinstance(obj, (np.int32, np.int64)):
+                return int(obj)
+            elif hasattr(obj, 'tolist'):  # برای tensorها و arrayها
+                return obj.tolist()
+            else:
+                return obj
+        
+        return convert(results)
+    
+    def run(self, host='0.0.0.0', port=5000):
+        print(f"="*50)
+        print(f"Starting NLP API on {host}:{port}")
+        self.app.run(host=host, port=port, debug=False)
+
+# اجرای API در background
+def start_api():
+    api = NLPAPI()
+    api.run()
+
+def test_api():
+    # داده برای ارسال
+    data = {
+        "text": "Apple is opening a new store in San Francisco next month"
+    }
+    
+    try:
+        # ارسال درخواست POST
+        response = requests.post('http://localhost:5000/analyze', json=data)
+        
+        # دریافت نتایج
+        print("Test Api...")
+        results = response.json()
+        print(results)
+    except Exception as e:
+        print(f"API test failed: {e}")
+        print("Make sure the API is running on port 5000")
+
+# اگر بخواهید API را اجرا کنید:
+# threading.Thread(target=start_api, daemon=True).start()
+# print("API is running in background...")
+
+# ********************************************************************
+#                            Run And Test API 
+# ********************************************************************
+# اگر بخواهید API را اجرا کنید، این خطوط را آنکامنت کنید:
+if __name__ == '__main__':
+    # انتخاب کنید کدام بخش را می‌خواهید اجرا کنید:
+    
+    # گزینه ۱: فقط API را اجرا کن
+    print(f"="*50)
+    print(f"*"*50)
+    print("Starting NLP API Server...")
+    start_api()
+    
+    # گزینه ۲: API در background و سپس تست
+    print(f"*"*50)
+    print("Starting API in background...")
+    api_thread = threading.Thread(target=start_api, daemon=True)
+    api_thread.start()
+    # 
+    print(f"*"*50)
+    print("Waiting for API to start...")
+    time.sleep(5)  # منتظر بمان API بالا بیاید
+    # 
+    print(f"-"*50)
+    print("Testing API...")
+    test_api()
+    # 
+    # # منتظر بمان تا کاربر Enter بزند
+    input("Press Enter to stop...")
+
+
+
