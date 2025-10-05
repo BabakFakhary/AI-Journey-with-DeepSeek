@@ -1,0 +1,7 @@
+# تست سلامت
+curl -X GET http://your-server-ip/health
+
+# تست تحلیل متن
+curl -X POST http://your-server-ip/analyze \
+  -H "Content-Type: application/json" \
+  -d "{\"text\": \"Microsoft is a great company based in Redmond\"}"
