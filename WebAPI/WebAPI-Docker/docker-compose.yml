@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  nlp-api:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./model_cache:/app/model_cache
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # برای توسعه - با hot reloading
+  nlp-api-dev:
+    build: .
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./app:/app/app
+      - ./model_cache:/app/model_cache
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - FLASK_ENV=development
+    command: python app/main.py
+    restart: unless-stopped

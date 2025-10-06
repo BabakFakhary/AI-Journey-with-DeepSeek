@@ -1,36 +1,36 @@
-# Multi-stage build برای کاهش سایز
-FROM python:3.9-slim as builder
-
-WORKDIR /app
-
-COPY requirements.txt .
-
-RUN pip install --user --no-cache-dir -r requirements.txt
-
-# Stage نهایی
 FROM python:3.9-slim
 
 WORKDIR /app
 
-# کپی packages از stage builder
-COPY --from=builder /root/.local /root/.local
+# نصب dependency های سیستم
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-# اضافه کردن PATH
-ENV PATH=/root/.local/bin:$PATH
+# کپی فایل requirements
+COPY requirements.txt .
 
-# کپی فایل‌های پروژه
-COPY . .
+# نصب کتابخانه‌های پایتون
+RUN pip install --no-cache-dir -r requirements.txt
+
+# کپی فایل‌های برنامه
+COPY app/ ./app/
 
 # ساخت پوشه‌های لازم
 RUN mkdir -p logs model_cache
 
-# کاربر غیر-root برای امنیت
-RUN useradd -m -u 1000 nlpuser
-RUN chown -R nlpuser:nlpuser /app
+# ایجاد کاربر غیر-root برای امنیت
+RUN useradd -m -u 1000 nlpuser && chown -R nlpuser:nlpuser /app
 USER nlpuser
 
 # پورت اکسپوز
 EXPOSE 5000
 
+# محیط اجرا
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
 # اجرای برنامه
-CMD ["python", "Hugging_Face_Transformer_Docker.py"]
+CMD ["python", "app/main.py"]
