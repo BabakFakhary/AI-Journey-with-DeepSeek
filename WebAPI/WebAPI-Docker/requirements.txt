@@ -5,3 +5,4 @@ arabic-reshaper>=3.0.0
 python-bidi>=0.4.2
 datasets>=2.0.0
 accelerate>=0.20.0
+gunicorn>=21.0.0
