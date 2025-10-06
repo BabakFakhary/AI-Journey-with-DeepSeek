@@ -1,0 +1,36 @@
+# Multi-stage build برای کاهش سایز
+FROM python:3.9-slim as builder
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# Stage نهایی
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# کپی packages از stage builder
+COPY --from=builder /root/.local /root/.local
+
+# اضافه کردن PATH
+ENV PATH=/root/.local/bin:$PATH
+
+# کپی فایل‌های پروژه
+COPY . .
+
+# ساخت پوشه‌های لازم
+RUN mkdir -p logs model_cache
+
+# کاربر غیر-root برای امنیت
+RUN useradd -m -u 1000 nlpuser
+RUN chown -R nlpuser:nlpuser /app
+USER nlpuser
+
+# پورت اکسپوز
+EXPOSE 5000
+
+# اجرای برنامه
+CMD ["python", "Hugging_Face_Transformer_Docker.py"]
