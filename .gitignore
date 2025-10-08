@@ -39,3 +39,12 @@ Week5/Session13/final-bert-sentiment-model/tokenizer_config.json
 Week5/Session13/final-bert-sentiment-model/vocab.txt
 Week5/Session13/logs/events.out.tfevents.1757837193.FAKHARY.21732.0
 Week5/Session13/logs/events.out.tfevents.1757837248.FAKHARY.21732.1
+Week7/Session16/data/cifar-10-python.tar.gz
+Week7/Session16/data/cifar-10-batches-py/batches.meta
+Week7/Session16/data/cifar-10-batches-py/data_batch_1
+Week7/Session16/data/cifar-10-batches-py/data_batch_2
+Week7/Session16/data/cifar-10-batches-py/data_batch_3
+Week7/Session16/data/cifar-10-batches-py/data_batch_4
+Week7/Session16/data/cifar-10-batches-py/data_batch_5
+Week7/Session16/data/cifar-10-batches-py/readme.html
+Week7/Session16/data/cifar-10-batches-py/test_batch
