@@ -5,7 +5,7 @@ import arabic_reshaper
 # install: pip install python-bidi
 from bidi.algorithm import get_display
 #-------------------------------------------------------
-# pip install transformers torchvision pillow datasets accelerate
+# pip install transformers torchvision pillow datasets accelerate timm
 import torch
 import torchvision
 from transformers import (
@@ -213,3 +213,106 @@ for i in range(5):
     actual = class_names[true_labels[i]]
     predicted = class_names[predicted_labels[i]]
     print(f"Image {i+1}: Actual: {actual}, Predicted: {predicted}")
+
+
+# --------------------------------------------------------
+# 4. تشخیص اشیاء با DETR
+# --------------------------------------------------------
+
+# ------------------------------------
+# 4.1 بارگذاری مدل DETR
+# ------------------------------------
+
+# بارگذاری مدل DETR برای تشخیص اشیاء
+detr_processor = DetrImageProcessor.from_pretrained(VISION_MODELS['detection'])
+detr_model = DetrForObjectDetection.from_pretrained(VISION_MODELS['detection'])
+detr_model.to(device)
+
+print("DETR model loaded successfully!")
+
+# ------------------------------------
+# 4.2 تشخیص اشیاء در تصاویر
+# ------------------------------------
+def download_image(url):
+    """دانلود تصویر از URL"""
+    response = requests.get(url, timeout=10)
+    return Image.open(BytesIO(response.content)).convert('RGB')
+
+# تصویر نمونه برای تست
+image_urls = [
+    "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/beignets-task-guide.png",
+    "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/cats.png"
+]
+
+def detect_objects(image):
+    """تشخیص اشیاء در تصویر"""
+    # پردازش تصویر
+    inputs = detr_processor(images=image, return_tensors="pt")
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+    
+    # پیش‌بینی
+    with torch.no_grad():
+        outputs = detr_model(**inputs)
+    
+    # post-processing
+    target_sizes = torch.tensor([image.size[::-1]]).to(device)
+    results = detr_processor.post_process_object_detection(
+        outputs, target_sizes=target_sizes, threshold=0.5
+    )[0]
+    
+    return results
+
+def draw_detections(image, detections):
+    """رسم bounding boxها روی تصویر"""
+    draw = ImageDraw.Draw(image)
+    
+    for score, label, box in zip(detections["scores"], detections["labels"], detections["boxes"]):
+        if score > 0.5:
+            box = box.cpu().numpy()
+            label_name = detr_model.config.id2label[label.item()]
+            
+            # رسم rectangle
+            draw.rectangle(box, outline="green", width=3)
+            
+            # افزودن label
+            draw.text((box[0], box[1]), f"{label_name}: {score:.2f}", fill="red")
+    
+    return image
+
+# تست روی تصاویر نمونه
+for i, url in enumerate(image_urls):
+    try:
+        print(f"\nProcessing image {i+1}...")
+        image = download_image(url)
+        
+        # تشخیص اشیاء
+        detections = detect_objects(image)
+        
+        # رسم نتایج
+        result_image = draw_detections(image.copy(), detections)
+        
+        # نمایش نتایج
+        plt.figure(figsize=(12, 6))
+        
+        plt.subplot(1, 2, 1)
+        plt.imshow(image)
+        plt.title("Original Image")
+        plt.axis('off')
+        
+        plt.subplot(1, 2, 2)
+        plt.imshow(result_image)
+        plt.title("Object Detection Results")
+        plt.axis('off')
+        
+        plt.tight_layout()
+        plt.show()
+        
+        # نمایش اطلاعات تشخیص
+        print("Detected objects:")
+        for score, label, box in zip(detections["scores"], detections["labels"], detections["boxes"]):
+            if score > 0.5:
+                label_name = detr_model.config.id2label[label.item()]
+                print(f"  {label_name}: {score:.3f}")
+                
+    except Exception as e:
+        print(f"Error processing image {i+1}: {e}")
