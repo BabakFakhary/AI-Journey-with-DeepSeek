@@ -497,3 +497,170 @@ except Exception as e:
     
     analysis = cv_system.analyze_image(test_image)
     cv_system.visualize_analysis(test_image, analysis)
+
+# --------------------------------------------------------
+# 6. Fine-tuning مدل‌های Vision - نسخه بهبود یافته
+# --------------------------------------------------------
+
+# ------------------------------------
+# 6.1 Fine-tuning ViT روی دیتاست سفارشی
+# ------------------------------------
+def fine_tune_vit_custom_improved():
+    """Fine-tuning ViT روی یک دیتاست کوچک - نسخه بهبود یافته"""
+    
+    print("Creating custom dataset for fine-tuning...")
+    
+    # ایجاد دیتاست سفارشی کوچک با پردازش صحیح
+    custom_data = []
+    transform = torchvision.transforms.Compose([
+        torchvision.transforms.Resize((224, 224)),
+        torchvision.transforms.ToTensor(),
+    ])
+    
+    for i in range(50):  # افزایش تعداد نمونه‌ها
+        if i % 2 == 0:
+            # کلاس 0: دایره
+            img = Image.new('RGB', (224, 224), color='white')
+            draw = ImageDraw.Draw(img)
+            draw.ellipse([50, 50, 150, 150], fill='red', outline='black')
+            label = 0
+        else:
+            # کلاس 1: مربع
+            img = Image.new('RGB', (224, 224), color='white')
+            draw = ImageDraw.Draw(img)
+            draw.rectangle([50, 50, 150, 150], fill='blue', outline='black')
+            label = 1
+        
+        # اعمال تبدیل‌ها
+        img_tensor = transform(img)
+        custom_data.append({'pixel_values': img_tensor, 'label': label})
+    
+    # تقسیم به train/validation
+    train_data = custom_data[:40]
+    val_data = custom_data[40:]
+    
+    train_dataset = Dataset.from_list(train_data)
+    val_dataset = Dataset.from_list(val_data)
+    
+    # مدل برای 2 کلاس
+    custom_model = ViTForImageClassification.from_pretrained(
+        VISION_MODELS['classification'],
+        num_labels=2,
+        ignore_mismatched_sizes=True
+    )
+    custom_model.to(device)
+    
+    # تنظیمات آموزش - اصلاح شده
+    training_args = TrainingArguments(
+        output_dir='./vit-custom-results',
+        num_train_epochs=10,
+        per_device_train_batch_size=8,
+        per_device_eval_batch_size=8,
+        learning_rate=5e-5,
+        warmup_steps=100,
+        weight_decay=0.01,
+        logging_dir='./logs-custom',
+        logging_steps=5,
+        eval_strategy='steps',  # تغییر از evaluation_strategy به eval_strategy
+        eval_steps=10,
+        save_strategy='steps',
+        load_best_model_at_end=True,
+        metric_for_best_model='accuracy',
+        greater_is_better=True,
+        seed=42
+    )
+    
+    trainer = Trainer(
+        model=custom_model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=val_dataset,
+        compute_metrics=compute_metrics,
+    )
+    
+    print("Starting fine-tuning on custom dataset...")
+    print(f"Training samples: {len(train_dataset)}")
+    print(f"Validation samples: {len(val_dataset)}")
+    
+    try:
+        trainer.train()
+        print("Fine-tuning completed successfully!")
+        
+        # ارزیابی مدل
+        eval_results = trainer.evaluate()
+        print("Fine-tuning evaluation results:")
+        for key, value in eval_results.items():
+            print(f"  {key}: {value:.4f}")
+        
+        return custom_model
+        
+    except Exception as e:
+        print(f"Error during fine-tuning: {e}")
+        return None
+
+# ------------------------------------
+# 6.2 تست Fine-tuning (اختیاری)
+# ------------------------------------
+def test_fine_tuned_model(model):
+    """تست مدل fine-tuned شده"""
+    if model is None:
+        print("No model to test.")
+        return
+    
+    print("Testing fine-tuned model...")
+    
+    # ایجاد نمونه تست
+    test_images = []
+    test_labels = []
+    
+    for i in range(10):
+        if i % 2 == 0:
+            img = Image.new('RGB', (224, 224), color='white')
+            draw = ImageDraw.Draw(img)
+            draw.ellipse([50, 50, 150, 150], fill='red', outline='black')
+            label = 0
+        else:
+            img = Image.new('RGB', (224, 224), color='white')
+            draw = ImageDraw.Draw(img)
+            draw.rectangle([50, 50, 150, 150], fill='blue', outline='black')
+            label = 1
+        
+        test_images.append(torchvision.transforms.ToTensor()(img))
+        test_labels.append(label)
+    
+    # پیش‌بینی
+    model.eval()
+    correct = 0
+    total = 0
+    
+    with torch.no_grad():
+        for i in range(len(test_images)):
+            inputs = test_images[i].unsqueeze(0).to(device)
+            outputs = model(inputs)
+            predicted = torch.argmax(outputs.logits, dim=1).item()
+            
+            if predicted == test_labels[i]:
+                correct += 1
+            total += 1
+            
+            shape = "circle" if test_labels[i] == 0 else "square"
+            pred_shape = "circle" if predicted == 0 else "square"
+            print(f"Sample {i+1}: Actual: {shape}, Predicted: {pred_shape}")
+    
+    accuracy = correct / total
+    print(f"Test Accuracy: {accuracy:.2%}")
+
+# اجرای fine-tuning (اختیاری - می‌توانید کامنت کنید اگر نمی‌خواهید اجرا شود)
+print("\n" + "="*60)
+print("FINE-TUNING SECTION")
+print("="*60)
+
+# اگر می‌خواهید fine-tuning اجرا شود، خط زیر را آنکامنت کنید
+fine_tuned_model = fine_tune_vit_custom_improved()
+if fine_tuned_model:
+    test_fine_tuned_model(fine_tuned_model)
+else:
+    print("Fine-tuning was skipped or failed.")
+
+print("Skipping fine-tuning section to avoid errors...")
+print("You can uncomment the lines above to run fine-tuning when needed.")
